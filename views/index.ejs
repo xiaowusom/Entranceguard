@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+	<head>
+		<meta charset="UTF-8">
+		<title>远程开门</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+		<link rel="stylesheet" type="text/css" href="/stylesheets/reset.css">
+		<!--<link rel="stylesheet" type="text/css" href="/stylesheets/normalize.css" media="screen">
+		<link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+		<link rel="stylesheet" type="text/css" href="/stylesheets/stylesheet.css" media="screen">
+		<link rel="stylesheet" type="text/css" href="/stylesheets/github-light.css" media="screen">-->
+		<style type="text/css">
+			#info_success,#info_error{
+				width:4rem;
+				height:2rem ;
+				text-align: center;
+				line-height: 2rem;
+				font-size: 0.30rem;
+				position: fixed;
+				left: 50%;
+				margin-left: -2rem;
+				top: 30%;
+				z-index: 200;
+				background: lightskyblue;
+				font-weight: bold;
+				border-radius: 0.15rem;
+				display: none;
+			}
+			.picker-choose{
+				padding: 0!important;
+			}
+			.confirm {
+				display: block!important;
+				width: 100%!important;
+				margin-left: 0!important;
+			}
+			#no_info{
+				margin-top: 0.3rem;
+				text-align: center;
+				font-size: 0.28rem;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div id="info_success">
+			<span>开门成功啦！</span>
+		</div>
+		<div id="info_error">
+			<span>开门失败，请检查您的网络是否已连接</span>
+		</div>
+	</body>
+	<script src="/javascripts/picker.min.js"></script>
+	<script src="/javascripts/jquery-3.2.1.js"></script>
+	<script src="/javascripts/md5.js"></script>
+	<script src="/javascripts/moment.js"></script>
+	<script>
+		(function (doc, win) {
+	        var docEl = doc.documentElement,
+	            resizeEvt = 'orientationchange' in window ? 'orientationchange' : 'resize',
+	            recalc = function () {
+	                var clientWidth = docEl.clientWidth;
+	                if (!clientWidth) return;
+	                if(clientWidth>=750){
+	                    docEl.style.fontSize = '100px';
+	                }else{
+	                    docEl.style.fontSize = 100 * (clientWidth /750) + 'px';
+	                }
+	            };
+	
+	        if (!doc.addEventListener) return;
+	        win.addEventListener(resizeEvt, recalc, false);
+	        doc.addEventListener('DOMContentLoaded', recalc, false);
+	    })(document, window);
+
+	</script>
+	<script>
+		$(function(){
+			var phone = "<%= phone%>"
+			var projectCode = "<%= projectCode%>"
+			var userName = "<%= userName%>"
+			var type = "<%= type%>"
+		  	var data1 = [];
+	    	var data2 = [];
+	    	var currentdate = moment().utc().utcOffset(+8).format("YYYY-MM-DD-HH-mm");
+	    	//console.log(currentdate)
+			var hash = md5(currentdate+"adminXH")
+		    //console.log(token)
+		    $.ajax({
+		        url: 'http://202.105.104.105:8006/ssh/openDoor/getDoorByPhone',
+//		        url: 'http://10.51.39.112:8080/community/openDoor/getDoorByPhone',
+		        type: 'post',
+		        dataType: 'json',
+		        data: {
+		          phone: phone,
+		          projectCode: projectCode,
+		          userName:userName,
+		          token:hash
+		        },
+		        success: function(res) {
+		        	console.log(res)
+			         data1 = res.result.doorList;
+			         if(res.errorCode==2){
+			         	var html = "<p id='no_info'>获取门列表失败</p>"
+			         	$("body").html(html)
+			         }
+			          if(res.errorCode==-1){
+			         	var html = "<p id='no_info'>请求超时，请重试!</p>"
+			         	$("body").html(html)
+			         }
+			         if(res.errorCode==200){
+			         	var personId = res.personId
+			         	for(var i = 0; i < data1.length; i++) {
+				           var obj = {};
+				           obj.value = data1[i].doorID;
+				           obj.text = data1[i].doorName;
+				           data2[i] = obj;
+				         }
+				         var picker1 = new Picker({
+				            data: [data2]
+				         });
+				         picker1.on('picker.select', function (selectedVal) {
+							var doorId = selectedVal[0];
+							var currentDate = moment().utc().utcOffset(+8).format("YYYY-MM-DD-HH-mm");
+							var Token = md5(currentDate+"adminXH")
+							$.ajax({
+								type:"post",
+								url:"http://202.105.104.105:8006/ssh/openDoor/openDoor",
+								data: {
+						          doorId: doorId,
+						          projectCode: projectCode,
+						          token:Token,
+						          type:type,
+						          personId:personId
+						        },
+						        success:function(res){
+						        	//console.log(res.state)
+						        	if(res.state){
+						        		$("#info_success").css("display","block")
+						        		$("#info_success").fadeOut(2000)
+						        	}else{
+						        		$("#info_error").css("display","block")
+						        		$("#info_error").fadeOut(2000)
+						        	}
+						        	
+						        },
+						        error:function(){
+						        	$("#info_error").css("display","block")
+						        	$("#info_error").fadeOut(2000)
+						        }
+							});
+						})
+				      	picker1.show();
+			         }   
+			    }
+			})
+		})
+	</script>
+</html>
