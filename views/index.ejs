@@ -68,7 +68,7 @@
 	                    docEl.style.fontSize = 100 * (clientWidth /750) + 'px';
 	                }
 	            };
-	
+
 	        if (!doc.addEventListener) return;
 	        win.addEventListener(resizeEvt, recalc, false);
 	        doc.addEventListener('DOMContentLoaded', recalc, false);
@@ -83,20 +83,20 @@
 			var type = "<%= type%>"
 		  	var data1 = [];
 	    	var data2 = [];
-	    	var currentdate = moment().utc().utcOffset(+8).format("YYYY-MM-DD-HH-mm");
-	    	//console.log(currentdate)
-			var hash = md5(currentdate+"adminXH")
-		    //console.log(token)
+	    	var currentdate = moment().utc().utcOffset(+8);
+				var time = parseInt(new Date(currentdate).getTime()/1000);
+				var sign = md5('userName='+userName+'&'+'phone='+phone+'&'+'projectCode='+projectCode+'&'+'time='+time)
 		    $.ajax({
-		        url: 'http://202.105.104.105:8006/ssh/openDoor/getDoorByPhone',
-//		        url: 'http://10.51.39.112:8080/community/openDoor/getDoorByPhone',
+		        url: 'http://202.105.104.105:8006/ssh/openDoor/v2/getDoorByPhone',
+		       // url: 'http://10.51.39.112:8080/community/openDoor/getDoorByPhone',
 		        type: 'post',
 		        dataType: 'json',
 		        data: {
 		          phone: phone,
 		          projectCode: projectCode,
 		          userName:userName,
-		          token:hash
+		          sign:sign,
+							time:time
 		        },
 		        success: function(res) {
 		        	console.log(res)
@@ -122,17 +122,19 @@
 				         });
 				         picker1.on('picker.select', function (selectedVal) {
 							var doorId = selectedVal[0];
-							var currentDate = moment().utc().utcOffset(+8).format("YYYY-MM-DD-HH-mm");
-							var Token = md5(currentDate+"adminXH")
+							var currentdate = moment().utc().utcOffset(+8);
+							var time = parseInt(new Date(currentdate).getTime()/1000);
+							var sign = md5('doorId='+doorId+'&'+'projectCode='+projectCode+'&'+'type='+type+'&'+'time='+time)
 							$.ajax({
 								type:"post",
-								url:"http://202.105.104.105:8006/ssh/openDoor/openDoor",
+								url:"http://202.105.104.105:8006/ssh/openDoor/v2/openDoor",
 								data: {
 						          doorId: doorId,
 						          projectCode: projectCode,
-						          token:Token,
+						          sign:sign,
 						          type:type,
-						          personId:personId
+						          personId:personId,
+											time:time
 						        },
 						        success:function(res){
 						        	//console.log(res.state)
@@ -143,7 +145,7 @@
 						        		$("#info_error").css("display","block")
 						        		$("#info_error").fadeOut(2000)
 						        	}
-						        	
+
 						        },
 						        error:function(){
 						        	$("#info_error").css("display","block")
@@ -152,7 +154,7 @@
 							});
 						})
 				      	picker1.show();
-			         }   
+			         }
 			    }
 			})
 		})
